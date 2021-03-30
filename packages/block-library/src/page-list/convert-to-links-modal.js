@@ -5,7 +5,7 @@ import { Button, ButtonGroup, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { store as coreDataStore } from '@wordpress/core-data';
-import { createBlock } from '@wordpress/blocks';
+import { createBlock as create } from '@wordpress/blocks';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 
 const PAGE_FIELDS = [ 'id', 'title', 'link', 'type', 'parent' ];
@@ -15,6 +15,7 @@ export const convertSelectedBlockToNavigationLinks = ( {
 	pages,
 	clientId,
 	replaceBlock,
+	createBlock,
 } ) => () => {
 	//TODO: handle resolving state
 	//TODO: test performance for lots of pages
@@ -26,8 +27,9 @@ export const convertSelectedBlockToNavigationLinks = ( {
 	const linkMap = {};
 	const navigationLinks = [];
 
-	//TODO: Current mapping assuming a sensible sort order with parents appearing in the list before children. Add unit test cases / throw some unexpected data at the sort.
 	pages.forEach( ( { id, title, link: url, type, parent } ) => {
+		// See if a placeholder exists. This is created if children appear before parents in list
+		const innerBlocks = linkMap[ id ]?.innerBlocks ?? [];
 		linkMap[ id ] = createBlock(
 			'core/navigation-link',
 			{
@@ -37,12 +39,16 @@ export const convertSelectedBlockToNavigationLinks = ( {
 				type,
 				kind: 'post-type',
 			},
-			[]
+			innerBlocks
 		);
 
 		if ( ! parent ) {
 			navigationLinks.push( linkMap[ id ] );
 		} else {
+			if ( ! linkMap[ parent ] ) {
+				// Use a placeholder if the child appears before parent in list
+				linkMap[ parent ] = { innerBlocks: [] };
+			}
 			const parentLinkInnerBlocks = linkMap[ parent ].innerBlocks;
 			parentLinkInnerBlocks.push( linkMap[ id ] );
 		}
@@ -92,6 +98,7 @@ export default function ConvertToLinksModal( { onClose, clientId } ) {
 						pages,
 						replaceBlock,
 						clientId,
+						createBlock: create,
 					} ) }
 				>
 					{ __( 'Convert' ) }
