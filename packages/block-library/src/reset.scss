@@ -5,7 +5,7 @@
  * of the editor by themes.
  */
 
-.editor-styles-wrapper {
+.editor-styles-wrapper.editor-styles-wrapper { // The selctor needs to be doubled to make it stronger than the wp-admin CSS
 	padding: 8px;
 
 	/**
